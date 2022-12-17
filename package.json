@@ -1,0 +1,23 @@
+{
+  "name": "hypertweet",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ryanmcgarvey/hypertweet.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ryanmcgarvey/hypertweet/issues"
+  },
+  "homepage": "https://github.com/ryanmcgarvey/hypertweet#readme",
+  "dependencies": {
+    "typescript": "^4.9.4"
+  }
+}
