@@ -1,18 +1,14 @@
 import setupHyperspace from './setup'
 import Tweeter from './tweet'
 
-async function main() {
-  // Setup the Hyperspace Daemon connection
-  // =
+async function main(args: string[]) {
   const { client, cleanup } = await setupHyperspace()
-  console.log('Hyperspace daemon connected, status:')
-  console.log(await client.status())
-
-  const t = new Tweeter(client)
+  const user = args[0]
+  const t = new Tweeter(client, user)
   await t.ready()
 
   process.on('SIGINT', cleanup)
 }
 
 
-main()
+main(process.argv.slice(2))
