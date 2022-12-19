@@ -1,4 +1,4 @@
-import setupHyperspace from './setup'
+import setupHyperspace from '../setup'
 import Tweeter from './tweet'
 
 async function main(args: string[]) {

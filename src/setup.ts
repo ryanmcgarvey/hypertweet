@@ -21,6 +21,7 @@ export default async function () {
 
   return {
     client,
+    server,
     async cleanup() {
       await client.close()
       if (server) {
