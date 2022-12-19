@@ -4,20 +4,15 @@ const {
   Server: HyperspaceServer
 } = require('hyperspace')
 
-export default async function () {
+export default async function (host) {
   let client: any;
   let server: any;
+  const storage = `./.hyperspace/${host}`
 
-  try {
-    client = new HyperspaceClient()
-    await client.ready()
-  } catch (e) {
-    // no daemon, start it in-process
-    server = new HyperspaceServer()
-    await server.ready()
-    client = new HyperspaceClient()
-    await client.ready()
-  }
+  server = new HyperspaceServer({ host, storage })
+  await server.ready()
+  client = new HyperspaceClient({ host })
+  await client.ready()
 
   return {
     client,

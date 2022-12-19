@@ -1,16 +1,19 @@
 import * as readline from 'node:readline';
 import { exit, stdin as input, stdout as output } from 'node:process';
-import { userConfigKey, updateUserConfigKey } from '../key_storage';
+const Hypberbee = require('hyperbee')
 
 
+const REGISTRY_KEY = '3de8ec44d4529e7565627ed0f45095cbf296a16002ef9e5f8ce1814d88c1656c'
 export default class Tweeter {
   user: string;
-
   client?: any;
   store?: any;
-  userConfigKey?: Buffer
   userCore?: any;
   rl: readline.Interface
+  cores: Map<string, any> = new Map()
+  keys: Map<string, string> = new Map()
+  registryCore?: any;
+  registry: any;
   constructor(client: any, user: string) {
     this.client = client
     this.user = user
@@ -18,42 +21,56 @@ export default class Tweeter {
   }
 
   async ready() {
-    this.store = this.client.corestore(`./.users/${this.user}`)
-    this.userConfigKey = userConfigKey(this.user)
-
-    // if (this.userConfigKey) {
-    //   this.userCore = this.store.get({ key: this.userConfigKey, valueEncoding: 'json' })
-    // } else {
-    // this.userCore = this.store.get({ name: this.user, valueEncoding: 'json' })
-    // }
-
-    this.userCore = this.store.get({ name: this.user, valueEncoding: 'json' })
+    this.store = this.client.corestore()
+    this.userCore = this.store.get({ name: 'tweets', valueEncoding: 'json' })
     await this.client.replicate(this.userCore)
-    this.userConfigKey = this.userCore.key
-    updateUserConfigKey(this.user, this.userCore.key)
-    return this.cmdPrompt()
+
+    this.registryCore = this.store.get({ key: Buffer.from(REGISTRY_KEY, 'hex'), valueEncoding: 'utf-8' })
+    // await this.client.replicate(this.registryCore)
+
+
+    await this.client.network.configure(this.userCore, { announce: false, lookup: true })
+
+    this.registry = new Hypberbee(this.registryCore, { keyEncoding: 'utf-8', valueEncoding: 'utf-8' })
+    await this.registry.ready()
+
+    this.cmdPrompt()
   }
 
   async cmdPrompt() {
     this.rl.question('> ', async (line: string) => {
-      switch (line) {
+      let [arg1, arg2, arg3] = line.split(' ')
+      let coreToUse: any
+      let value;
+      switch (arg1) {
+        case 'lookup':
+          value = await this.registry.get(arg2)
+          console.log("key", value)
+        case 'key':
+          console.log(this.userCore.key.toString('hex'))
+          this.cmdPrompt()
+          break;
+        case 'follow':
+          coreToUse = await this.getCoreFromKey(arg3)
+          this.keys.set(arg2, arg3)
+          this.cores.set(arg2, coreToUse)
+          console.log("following", arg2)
+          this.cmdPrompt()
+          break;
         case 'exit':
           this.rl.close();
           exit(0);
-          break;
-        case /list.*/.test(line) && line:
-          const [_, coreName] = line.split(' ')
-          if (coreName) {
-            const otherCore = this.store.get({ name: coreName, valueEncoding: 'json' })
-            await this.client.replicate(otherCore)
-            this.printCore(otherCore)
+        case 'list':
+          if (coreToUse = await this.getCoreFromName(arg2)) {
+            this.printCore(coreToUse)
           } else {
-            this.printCore(this.userCore)
+            console.log('core not found')
           }
           this.cmdPrompt()
           break;
         case 'tweet':
-          this.tweet()
+          coreToUse = await this.getCoreFromName(arg2)
+          this.tweet(coreToUse)
           break
         default:
           console.log('unknown command')
@@ -62,9 +79,22 @@ export default class Tweeter {
     });
   }
 
-  async tweet() {
+  async getCoreFromName(coreName: string) {
+    return this.cores.get(coreName) || this.userCore
+  }
+
+  async getCoreFromKey(key: string) {
+    const core = this.store.get({ key: Buffer.from(key, 'hex') })
+    if (!core) {
+      return
+    }
+    await this.client.replicate(core)
+    return core;
+  }
+
+  async tweet(core: any) {
     this.rl.question('What would you like to say?\n> ', (line: string) => {
-      this.userCore.append({ date: new Date(), data: line })
+      core.append({ date: new Date(), data: line })
       this.cmdPrompt()
     });
   }

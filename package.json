@@ -19,6 +19,8 @@
   "homepage": "https://github.com/ryanmcgarvey/hypertweet#readme",
   "dependencies": {
     "hyper-typings": "^1.0.0",
+    "hyperbee": "^2.2.0",
+    "hypercore": "^10.5.3",
     "hyperspace": "^3.19.0",
     "typescript": "^4.9.4"
   },

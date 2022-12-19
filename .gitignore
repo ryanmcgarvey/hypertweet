@@ -3,3 +3,5 @@
 node_modules
 walkthroughs
 .users
+.hyperspace
+.registry

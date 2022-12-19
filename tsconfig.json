@@ -4,8 +4,8 @@
       "ESNext"
     ],
     "moduleResolution": "node",
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "removeComments": true,
     "sourceMap": true,
     "target": "ES2020",
