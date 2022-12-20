@@ -1,77 +1,79 @@
 import * as readline from 'node:readline';
 import { exit, stdin as input, stdout as output } from 'node:process';
-const Hypberbee = require('hyperbee')
+import { buildCore, buildDb, getKeyFromDb, upsert } from "../util"
 
-
-const REGISTRY_KEY = '3de8ec44d4529e7565627ed0f45095cbf296a16002ef9e5f8ce1814d88c1656c'
+type follow = {
+  name: string,
+  publicKey: Buffer,
+}
 export default class Tweeter {
-  user: string;
-  client?: any;
-  store?: any;
-  userCore?: any;
   rl: readline.Interface
-  cores: Map<string, any> = new Map()
-  keys: Map<string, string> = new Map()
-  registryCore?: any;
+
+  user: string;
+  store: any;
+  userCore: any;
   registry: any;
-  constructor(client: any, user: string) {
-    this.client = client
+  profile: any;
+  swarm: any;
+  follows: any[];
+
+  constructor({ profile, swarm, store, userCore, registry, user }: { profile, swarm: any, store: any, userCore: any, registry: any, user: string }) {
     this.user = user
+    this.swarm = swarm
+    this.store = store
+    this.registry = registry
+    this.userCore = userCore
+    this.profile = profile
     this.rl = readline.createInterface({ input, output });
   }
 
   async ready() {
-    this.store = this.client.corestore()
-    this.userCore = this.store.get({ name: 'tweets', valueEncoding: 'json' })
-    await this.client.replicate(this.userCore)
-
-    this.registryCore = this.store.get({ key: Buffer.from(REGISTRY_KEY, 'hex'), valueEncoding: 'utf-8' })
-    // await this.client.replicate(this.registryCore)
-
-
-    await this.client.network.configure(this.userCore, { announce: false, lookup: true })
-
-    this.registry = new Hypberbee(this.registryCore, { keyEncoding: 'utf-8', valueEncoding: 'utf-8' })
-    await this.registry.ready()
-
+    this.follows = (await this.profile.get('follows'))?.value as follow[]
+    console.log("Following:")
+    for await (const user of this.follows) {
+      console.log(user.name)
+      const core = this.messagesCoreFromName(user.name)
+      this.printCore(core)
+    }
     this.cmdPrompt()
   }
 
   async cmdPrompt() {
     this.rl.question('> ', async (line: string) => {
-      let [arg1, arg2, arg3] = line.split(' ')
+      let [arg1, arg2] = line.split(' ')
       let coreToUse: any
-      let value;
       switch (arg1) {
-        case 'lookup':
-          value = await this.registry.get(arg2)
-          console.log("key", value)
         case 'key':
           console.log(this.userCore.key.toString('hex'))
           this.cmdPrompt()
           break;
         case 'follow':
-          coreToUse = await this.getCoreFromKey(arg3)
-          this.keys.set(arg2, arg3)
-          this.cores.set(arg2, coreToUse)
-          console.log("following", arg2)
+          if (arg2) {
+            if (coreToUse = await this.messagesCoreFromName(arg2)) {
+              this.follows.push({ name: arg2, publicKey: coreToUse.key })
+              this.profile.put('follows', this.follows)
+              this.printCore(coreToUse)
+            } else {
+              console.log('user not found')
+            }
+          }
           this.cmdPrompt()
           break;
-        case 'exit':
-          this.rl.close();
-          exit(0);
         case 'list':
-          if (coreToUse = await this.getCoreFromName(arg2)) {
+          const nameToFetch = arg2 || this.user
+          if (coreToUse = await this.messagesCoreFromName(nameToFetch)) {
             this.printCore(coreToUse)
           } else {
-            console.log('core not found')
+            console.log('user not fond')
           }
           this.cmdPrompt()
           break;
         case 'tweet':
-          coreToUse = await this.getCoreFromName(arg2)
-          this.tweet(coreToUse)
+          this.tweet(this.userCore)
           break
+        case 'exit':
+          this.rl.close();
+          exit(0);
         default:
           console.log('unknown command')
           this.cmdPrompt()
@@ -79,17 +81,27 @@ export default class Tweeter {
     });
   }
 
-  async getCoreFromName(coreName: string) {
-    return this.cores.get(coreName) || this.userCore
-  }
+  async messagesCoreFromName(name: string) {
+    console.log("listing", name)
 
-  async getCoreFromKey(key: string) {
-    const core = this.store.get({ key: Buffer.from(key, 'hex') })
-    if (!core) {
+    const key = (await this.registry.get(name))?.value
+    if (!key) {
+      console.log("no key found for", name)
       return
     }
-    await this.client.replicate(core)
-    return core;
+    const profile = await buildDb({ store: this.store, keyPair: { publicKey: Buffer.from(key.publicKey) } })
+
+    const messagesKeyRaw = (await profile.db.get('publicMessageKey'))?.value
+    if (!messagesKeyRaw) {
+      console.log("no messages key found for", name)
+      return
+    }
+    const { core: messages } = await buildCore({ store: this.store, keyPair: { publicKey: Buffer.from(messagesKeyRaw) }, opts: { valueEncoding: 'json' } })
+    const disc = this.swarm.join(messages.key, { server: false, client: true })
+    disc.flushed()
+    this.swarm.flush()
+    await messages.ready()
+    return messages
   }
 
   async tweet(core: any) {

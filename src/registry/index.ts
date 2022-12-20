@@ -1,9 +1,8 @@
-import minimist from 'minimist'
-const crypto = require('hypercore-crypto')
 const DHT = require('@hyperswarm/dht')
 const Hyperswarm = require('hyperswarm')
 const Corestore = require('corestore')
 const Hyperbee = require('hyperbee')
+import { buildCore, buildDb, getKeyFromDb, upsert } from "../util"
 
 const registryKeyPair = {
   publicKey: Buffer.from('e0d77896a66537bfbcd0d3755ae35bbc49ca49b0cd98927f0283009c1b2ecf0f', 'hex'),
@@ -14,7 +13,7 @@ async function main() {
   const store = new Corestore('./.storage/registry')
   await store.ready()
 
-  const registryCore = store.get({ keyPair: registryKeyPair })
+  const registryCore = store.get({ keyPair: registryKeyPair, keyEncoding: 'utf-8', valueEncoding: 'json' })
   await registryCore.ready()
 
   console.log(`(registry/disc) ${registryCore.discoveryKey.toString('hex')}`)
@@ -38,11 +37,27 @@ async function main() {
     const { remotePublicKey: publicKey } = conn
     const keystr = publicKey.toString('hex')
     const keyPair = { publicKey }
-
     console.log(`(registry / connection) ${keystr.slice(0, 6)}`)
-    registry.put(keystr, { publicKey, keystr }, { ifMissing: true })
-    store.get(publicKey, { keyPair })
     store.replicate(conn)
+
+    const profileCore = store.get(publicKey, { keyPair })
+    await profileCore.ready()
+    const profile = new Hyperbee(profileCore, { keyEncoding: 'utf-8', valueEncoding: 'json' })
+    await profile.ready()
+    let profileName = (await profile.get('name'))?.value.toString()
+
+    if (profileName) {
+
+      const existing = (await registry.get(profileName))?.value?.toString()
+      if (existing) {
+        console.log("(registry) Welcome BACK:", profileName)
+      } else {
+        console.log("(registry) Welcome:", profileName)
+      }
+      registry.put(profileName, { publicKey, keystr }, { cas: upsert })
+    }
+
+
   }
 }
 
