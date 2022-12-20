@@ -1,28 +1,13 @@
-
-const {
-  Client: HyperspaceClient,
-  Server: HyperspaceServer
-} = require('hyperspace')
+import Corestore from 'corestore'
+import minimist from 'minimist'
+import crypto from 'hypercore-crypto'
+import DHT from '@hyperswarm/dht'
+import Hyperswarm from 'hyperswarm'
+import Hyperbee from 'hyperbee'
 
 export default async function (host) {
-  let client: any;
-  let server: any;
-  const storage = `./.hyperspace/${host}`
+  const storage = `./.storage/${host}`
+  const store = new Corestore()
 
-  server = new HyperspaceServer({ host, storage })
-  await server.ready()
-  client = new HyperspaceClient({ host })
-  await client.ready()
-
-  return {
-    client,
-    server,
-    async cleanup() {
-      await client.close()
-      if (server) {
-        console.log('Shutting down Hyperspace, this may take a few seconds...')
-        await server.stop()
-      }
-    }
-  }
+  return {}
 }

@@ -2,7 +2,7 @@
   "name": "hypertweet",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -18,10 +18,15 @@
   },
   "homepage": "https://github.com/ryanmcgarvey/hypertweet#readme",
   "dependencies": {
+    "@hyperswarm/dht": "^6.3.5",
+    "corestore": "^6.4.0",
     "hyper-typings": "^1.0.0",
     "hyperbee": "^2.2.0",
     "hypercore": "^10.5.3",
-    "hyperspace": "^3.19.0",
+    "hypercore-crypto": "^3.3.0",
+    "hyperswarm": "^4.3.5",
+    "minimist": "^1.2.7",
+    "random-access-memory": "^6.1.0",
     "typescript": "^4.9.4"
   },
   "devDependencies": {

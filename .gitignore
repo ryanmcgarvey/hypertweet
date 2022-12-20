@@ -1,7 +1,5 @@
 .history
 .vscode
 node_modules
+.storage
 walkthroughs
-.users
-.hyperspace
-.registry
