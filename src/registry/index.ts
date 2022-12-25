@@ -11,17 +11,23 @@ const registryKeyPair = {
 
 async function main() {
   const store = new Corestore('./.storage/registry')
+  console.log("Waiting for store init")
   await store.ready()
 
   const registryCore = store.get({ keyPair: registryKeyPair, keyEncoding: 'utf-8', valueEncoding: 'json' })
+  console.log("Waiting for registry core init")
   await registryCore.ready()
 
   console.log(`(registry/disc) ${registryCore.discoveryKey.toString('hex')}`)
   console.log(`(registry/public) ${registryCore.key.toString('hex')}`)
   const registry = new Hyperbee(registryCore, { keyEncoding: 'utf-8', valueEncoding: 'json' })
+  console.log("Waiting for registry core")
   await registry.ready()
 
-  const dht = new DHT({ keyPair: registryKeyPair })
+
+  console.log("Waiting for DHT init")
+  const dht = new DHT({ keyPair: registryKeyPair, bootstrap: false })
+  console.log("Waiting for swarm init")
   const swarm = new Hyperswarm({ dht, keyPair: registryKeyPair })
 
   swarm.on('connection', onconn)
@@ -32,6 +38,8 @@ async function main() {
 
   await Promise.all(discs.map((disc) => disc.flushed()))
   await swarm.flush()
+
+  console.log("Swarm flushed")
 
   async function onconn(conn, peerinfo) {
     const { remotePublicKey: publicKey } = conn

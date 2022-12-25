@@ -1,39 +1,26 @@
 import * as readline from 'node:readline';
 import { exit, stdin as input, stdout as output } from 'node:process';
 import { buildCore, buildDb, getKeyFromDb, upsert } from "../util"
+import Tweeter from './tweet';
 
 type follow = {
   name: string,
   publicKey: Buffer,
 }
-export default class Tweeter {
+export default class Cli {
+  rl: readline.Interface
   user: string;
-  store: any;
-  userCore: any;
-  registry: any;
-  profile: any;
-  swarm: any;
   follows: follow[];
+  tweeter: Tweeter
 
-  constructor({ profile, swarm, store, userCore, registry, user }: { profile, swarm: any, store: any, userCore: any, registry: any, user: string }) {
+  constructor({ user, tweeter }: { user: string, tweeter: Tweeter }) {
     this.user = user
-    this.swarm = swarm
-    this.store = store
-    this.registry = registry
-    this.userCore = userCore
-    this.profile = profile
     this.follows = []
+    this.tweeter = tweeter
+    this.rl = readline.createInterface({ input, output });
   }
 
-  async loadFollowers() {
-    this.follows = (await this.profile.get('follows'))?.value as follow[]
-    console.log("Following:")
-    for await (const user of this.follows) {
-      console.log(user.name)
-      const core = this.messagesCoreFromName(user.name)
-      this.printCore(core)
-    }
-    this.cmdPrompt()
+  async ready() {
   }
 
   async cmdPrompt() {
