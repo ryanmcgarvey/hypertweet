@@ -19,6 +19,7 @@
   "homepage": "https://github.com/ryanmcgarvey/hypertweet#readme",
   "dependencies": {
     "@hyperswarm/dht": "^6.3.5",
+    "@hyperswarm/testnet": "^3.1.0",
     "corestore": "^6.4.0",
     "hyper-typings": "^1.0.0",
     "hyperbee": "^2.2.0",
