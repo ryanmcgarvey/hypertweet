@@ -27,9 +27,6 @@ async function main(name: string, registryKey?: string) {
   console.log("public key: ", configKeyPair?.publicKey.toString("hex"))
   console.log("secret key", configKeyPair?.secretKey.toString("hex"))
 
-
-
-
   const { db: config } = await buildDb({ store, keyPair: configKeyPair })
   const { db: profile, keyPair: profileKeyPair } = await buildDb({ store, keyPair: await getKeyFromDb(config, 'profileKeyPair') })
   config.put('profileKeyPair', profileKeyPair, { cas: upsert })
@@ -52,7 +49,7 @@ async function main(name: string, registryKey?: string) {
   const registry = new Hyperbee(registryCore, { keyEncoding: 'utf-8', valueEncoding: 'json' })
   await registry.ready()
 
-  const dht = new DHT({ keyPair: profileKeyPair })
+  const dht = new DHT({ keyPair: profileKeyPair, bootstrap: [{ host: 'localhost', port: 49737 }] })
   const swarm = new Hyperswarm({ dht, keyPair: profileKeyPair })
 
   swarm.on('connection', onconn)

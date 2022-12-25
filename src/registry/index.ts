@@ -21,7 +21,7 @@ async function main() {
   const registry = new Hyperbee(registryCore, { keyEncoding: 'utf-8', valueEncoding: 'json' })
   await registry.ready()
 
-  const dht = new DHT({ keyPair: registryKeyPair })
+  const dht = new DHT({ keyPair: registryKeyPair, bootstrap: [{ host: 'localhost', port: 49737 }] })
   const swarm = new Hyperswarm({ dht, keyPair: registryKeyPair })
 
   swarm.on('connection', onconn)
